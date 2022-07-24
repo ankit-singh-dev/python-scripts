@@ -4,6 +4,7 @@ import requests
 from pathlib import Path
 import openpyxl
 from bs4 import BeautifulSoup
+import logging
 
 
 def extract_pdf(data_from_xlsx_file):
@@ -17,20 +18,30 @@ def extract_pdf(data_from_xlsx_file):
         hit_url = base_url + value[0]
         print(hit_url)
         try:
+            time.sleep(45)
             hit_response = requests.get(hit_url)
-            time.sleep(3)
-            soup = BeautifulSoup(hit_response.text, 'html.parser')
-            file_url_res = soup.find('embed').attrs["src"]
-            if 'https' not in file_url_res:
-                file_url_res = 'https:' + soup.find('embed').attrs["src"]
+            if hit_response is not None:
+                print(hit_response)
+                soup = BeautifulSoup(hit_response.text, 'html.parser')
+                if soup is not None and soup.find('embed') is not None and soup.find('embed').attrs["src"] is not None:
+                    file_url_res = soup.find('embed').attrs["src"]
+                    if 'https' not in file_url_res:
+                        file_url_res = 'https:' + soup.find('embed').attrs["src"]
 
-            print(file_url_res)
-            file_res = requests.get(file_url_res)
-            filename = Path(key + '.pdf')
-            filename.write_bytes(file_res.content)
-            print('file downloaded successfully')
-            success_failure_dict[key] = "Yes"
+                    print(file_url_res)
+                    file_res = requests.get(file_url_res)
+                    filename = Path(str(key) + '.pdf')
+                    filename.write_bytes(file_res.content)
+                    print('file downloaded successfully')
+                    success_failure_dict[key] = "Yes"
+                else:
+                    success_failure_dict[key] = "No"
+                    print('download failed', key)
+            else:
+                success_failure_dict[key] = "No"
+                print('download failed', key)
         except:
+            logging.exception("message")
             success_failure_dict[key] = "No"
             print('download failed', key)
 
