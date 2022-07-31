@@ -23,7 +23,6 @@ def read_from_file():
         existing_treatments = study_treatment_dict.get(study_name_list[i], list())
         existing_treatments.append(treatment_name_list[i].strip())
         study_treatment_dict[study_name_list[i].strip()] = existing_treatments
-
     pahela_list = list()
     doosra_list = list()
     for key, value in study_treatment_dict.items():
@@ -33,6 +32,10 @@ def read_from_file():
                 for j in range(i + 1, treatment_list_size):
                     pahela_list.append(value[i])
                     doosra_list.append(value[j])
+        elif treatment_list_size == 1:
+            pahela_list.append(value[0])
+            doosra_list.append('')
+
     my_data_frame = {
         'from': pahela_list,
         'to': doosra_list
@@ -40,6 +43,7 @@ def read_from_file():
     my_data_frame = pd.DataFrame(my_data_frame)
     my_data_frame['weight'] = (my_data_frame.groupby(['from', 'to'])['from'].transform('size'))/10
     graph_obj = nx.from_pandas_edgelist(my_data_frame, source="from", target="to", create_using=nx.Graph(), edge_attr='weight')
+    graph_obj.remove_node('')
 
     weights = [graph_obj[u][v]['weight'] for u, v in graph_obj.edges()]
     edge_weights = nx.get_edge_attributes(graph_obj, "weight")
@@ -47,8 +51,10 @@ def read_from_file():
         edge_weights[key] = int(edge_weights[key] * 10)
     layout = nx.shell_layout(graph_obj, scale=2)
     node_degree = dict(nx.degree(graph_obj))
-
-    nx.draw(graph_obj, with_labels=True, pos=layout, font_size=8, width=weights, node_size=[v * 100 for v in node_degree.values()])
+    for key, item in node_degree.items():
+        if item == 0:
+            node_degree[key] = 1
+    nx.draw(graph_obj, with_labels=True, pos=layout, font_size=8, width=weights, node_size=[v * 100 for v in node_degree.values()], node_color='red')
 
     nx.draw_networkx_edge_labels(graph_obj, pos=layout, edge_labels=edge_weights, font_size=6)
     plt.show()
